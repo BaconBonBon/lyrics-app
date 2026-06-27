@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="歌詞">
+<meta name="theme-color" content="#7C3AED">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon.svg">
+<title>歌詞ライブラリ</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --accent:#7C3AED;--accent-h:#6D28D9;--accent-light:#EDE9FE;
+  --bg:#F8F7FF;--surface:#FFFFFF;--surface2:#F3F0FF;
+  --text:#1a1a2e;--text2:#64648A;--text3:#A0A0C0;
+  --border:#E8E4FF;--border2:#D4CEFF;
+  --red:#EF4444;--green:#10B981;--radius:10px;
+}
+@media(prefers-color-scheme:dark){
+  :root{--bg:#0F0E1A;--surface:#1C1B2E;--surface2:#252440;--text:#F0EEFF;--text2:#9D9DC0;--text3:#5A5A80;--border:#2E2B4A;--border2:#3D3A60;--accent-light:#2D1B69;}
+}
+html,body{height:100%;overflow:hidden}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);font-size:15px}
+.app{display:flex;height:100vh;overflow:hidden}
+
+/* Sidebar */
+.sidebar{width:280px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;transition:transform .3s cubic-bezier(.4,0,.2,1)}
+.sidebar-header{padding:1.25rem 1rem .75rem;border-bottom:1px solid var(--border);flex-shrink:0}
+.app-brand{display:flex;align-items:center;gap:8px;margin-bottom:4px}
+.app-brand i{font-size:20px;color:var(--accent)}
+.app-brand span{font-size:15px;font-weight:600}
+.app-tagline{font-size:11px;color:var(--text3);margin-left:28px}
+.sync-status{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text3);margin-left:28px;margin-top:3px}
+.sync-dot{width:6px;height:6px;border-radius:50%;background:var(--text3);flex-shrink:0;transition:background .3s}
+.sync-dot.ok{background:var(--green)}.sync-dot.err{background:var(--red)}.sync-dot.ing{background:#F59E0B;animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.search-box{position:relative;padding:.75rem 1rem;border-bottom:1px solid var(--border);flex-shrink:0}
+.search-box input{width:100%;padding:9px 10px 9px 34px;font-size:14px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--surface2);color:var(--text);outline:none}
+.search-box input::placeholder{color:var(--text3)}
+.search-box input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(124,58,237,.12)}
+.si{position:absolute;left:22px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:15px;pointer-events:none}
+.filter-tabs{display:flex;padding:.5rem .75rem;gap:4px;flex-shrink:0}
+.ftab{font-size:12px;padding:5px 12px;border-radius:20px;border:none;cursor:pointer;background:transparent;color:var(--text2);font-weight:500;transition:all .15s}
+.ftab.on{background:var(--accent-light);color:var(--accent)}.ftab:hover:not(.on){background:var(--surface2)}
+.song-list{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.song-list::-webkit-scrollbar{width:4px}.song-list::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+.song-item{display:flex;align-items:center;gap:10px;padding:.65rem 1rem;cursor:pointer;border-left:3px solid transparent;transition:all .12s}
+.song-item:hover{background:var(--surface2)}.song-item.on{background:var(--accent-light);border-left-color:var(--accent)}
+.song-meta{flex:1;min-width:0}
+.song-name{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.song-artist{font-size:11px;color:var(--text3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fav-star{background:none;border:none;cursor:pointer;color:var(--text3);font-size:16px;padding:4px;flex-shrink:0;transition:color .15s;line-height:1}
+.fav-star.on{color:var(--red)}.fav-star:hover{color:var(--red)}
+.sidebar-footer{padding:.75rem 1rem;border-top:1px solid var(--border);display:flex;gap:8px;flex-shrink:0}
+.sf-btn{flex:1;padding:9px 6px;font-size:12px;border-radius:var(--radius);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;font-weight:500;transition:all .15s}
+.sf-btn.primary{border:1.5px solid var(--accent);background:transparent;color:var(--accent)}.sf-btn.primary:hover{background:var(--accent-light)}
+.sf-btn.ghost{border:1px solid var(--border2);background:transparent;color:var(--text2)}.sf-btn.ghost:hover{background:var(--surface2)}
+
+/* Main */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;background:var(--bg)}
+.main-header{display:flex;align-items:center;gap:12px;padding:1rem 1.5rem;border-bottom:1px solid var(--border);background:var(--surface);flex-shrink:0}
+.menu-toggle{display:none;background:none;border:none;cursor:pointer;color:var(--text2);font-size:22px;padding:2px}
+.header-info{flex:1;min-width:0}
+.header-title{font-size:18px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.header-artist{font-size:12px;color:var(--text3);margin-top:2px}
+.header-actions{display:flex;gap:6px;flex-shrink:0}
+.hbtn{background:none;border:1px solid var(--border2);border-radius:var(--radius);padding:7px 11px;cursor:pointer;color:var(--text2);font-size:13px;display:flex;align-items:center;gap:5px;transition:all .15s;white-space:nowrap}
+.hbtn:hover{background:var(--surface2)}.hbtn.del:hover{color:var(--red);border-color:var(--red)}.hbtn.fav-on{color:var(--red);border-color:rgba(239,68,68,.3)}
+.lyrics-wrap{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:2rem 1.5rem}
+.lyrics-inner{max-width:600px;margin:0 auto}
+.lyric-block{margin-bottom:1.75rem}
+.jp{font-size:18px;line-height:1.65;font-weight:400}
+.rm{font-size:13px;line-height:1.9;color:var(--text2);margin-top:3px;letter-spacing:.02em}
+.empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;color:var(--text3);padding:3rem}
+.empty i{font-size:48px;opacity:.25}.empty p{font-size:14px;text-align:center}.empty small{font-size:12px;opacity:.6;text-align:center}
+
+/* Mobile */
+@media(max-width:640px){
+  .sidebar{position:fixed;left:0;top:0;bottom:0;z-index:50;transform:translateX(-100%);width:85vw;max-width:320px;box-shadow:4px 0 24px rgba(0,0,0,.15)}
+  .sidebar.open{transform:translateX(0)}
+  .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:49}
+  .overlay.on{display:block}
+  .menu-toggle{display:block}
+  .hbtn span{display:none}
+  .lyrics-wrap{padding:1.25rem 1rem}
+  .main-header{padding:.85rem 1rem}
+}
+
+/* Modal */
+.modal-wrap{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center;z-index:100}
+@media(min-width:641px){.modal-wrap{align-items:center;padding:1rem}}
+.modal{background:var(--surface);width:100%;max-width:560px;border-radius:20px 20px 0 0;padding:1.5rem 1.25rem 2rem;max-height:92vh;overflow-y:auto}
+@media(min-width:641px){.modal{border-radius:16px;padding:1.5rem}}
+.modal-title{font-size:16px;font-weight:600;margin-bottom:1.25rem;display:flex;align-items:center;gap:8px}
+.modal-title i{color:var(--accent)}
+.fg{margin-bottom:1rem}
+.fl{font-size:12px;color:var(--text2);margin-bottom:5px;display:block;font-weight:500}
+.fi{width:100%;padding:10px 12px;font-size:14px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--surface2);color:var(--text);outline:none}
+.fi:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(124,58,237,.12)}
+.fi::placeholder{color:var(--text3)}
+.fr{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+textarea.fi{resize:vertical;min-height:110px;font-family:inherit;line-height:1.6}
+.fhint{font-size:11px;color:var(--text3);margin-top:4px}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:1.25rem;padding-top:1rem;border-top:1px solid var(--border)}
+.btn-c{padding:9px 18px;font-size:13px;border-radius:var(--radius);border:1px solid var(--border2);background:transparent;color:var(--text2);cursor:pointer;font-weight:500}
+.btn-s{padding:9px 20px;font-size:13px;border-radius:var(--radius);border:none;background:var(--accent);color:#fff;cursor:pointer;font-weight:600}
+.btn-s:hover{background:var(--accent-h)}
+
+/* Setup screen */
+.setup-screen{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:200;padding:1.5rem}
+.setup-card{background:var(--surface);border-radius:16px;border:1px solid var(--border);padding:2rem;width:100%;max-width:440px}
+.setup-logo{display:flex;align-items:center;gap:10px;margin-bottom:.5rem}
+.setup-logo i{font-size:28px;color:var(--accent)}
+.setup-logo span{font-size:20px;font-weight:700}
+.setup-desc{font-size:13px;color:var(--text2);margin-bottom:1.5rem;line-height:1.6}
+.setup-hint{font-size:11px;color:var(--text3);margin-top:6px;line-height:1.5}
+.setup-hint a{color:var(--accent);text-decoration:none}
+.setup-err{font-size:12px;color:var(--red);margin-top:.5rem;display:none}
+
+/* Loading */
+.loading-screen{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;z-index:150}
+.loading-screen i{font-size:40px;color:var(--accent);animation:spin 1.2s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-screen p{font-size:14px;color:var(--text2)}
+
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(60px);background:var(--text);color:var(--surface);padding:10px 20px;border-radius:20px;font-size:13px;font-weight:500;z-index:300;transition:transform .3s,opacity .3s;opacity:0;pointer-events:none;white-space:nowrap}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+.no-songs{text-align:center;padding:2rem 1rem;color:var(--text3);font-size:13px}
+</style>
+</head>
+<body>
+
+<!-- Setup Screen -->
+<div class="setup-screen" id="setupScreen" style="display:none">
+  <div class="setup-card">
+    <div class="setup-logo"><i class="ti ti-music"></i><span>歌詞ライブラリ</span></div>
+    <div class="setup-desc">首次使用請輸入你的 GitHub Gist 設定。<br>資料只會存在這個裝置的瀏覽器裡，不會出現在任何檔案中。</div>
+    <div class="fg">
+      <label class="fl">Gist ID</label>
+      <input class="fi" id="setupGistId" placeholder="e1b78538cfa0e4d22e2a8bf4a9e82e1d" autocomplete="off" spellcheck="false">
+      <div class="setup-hint">Gist 網址最後那串英數字</div>
+    </div>
+    <div class="fg">
+      <label class="fl">GitHub Personal Access Token</label>
+      <input class="fi" id="setupToken" type="password" placeholder="ghp_xxxxxxxxxxxxxxxx" autocomplete="off" spellcheck="false">
+      <div class="setup-hint">需要 <strong>gist</strong> 權限。<a href="https://github.com/settings/tokens" target="_blank">前往 GitHub 產生 Token →</a></div>
+    </div>
+    <div class="setup-err" id="setupErr"></div>
+    <div class="modal-actions" style="border:none;padding-top:.5rem;margin-top:.5rem">
+      <button class="btn-s" onclick="saveSetup()" style="width:100%;justify-content:center">連線並開始使用</button>
+    </div>
+    <div style="text-align:center;margin-top:1rem">
+      <button onclick="openSettingsModal()" style="background:none;border:none;font-size:12px;color:var(--text3);cursor:pointer;text-decoration:underline">已有設定，重新設定</button>
+    </div>
+  </div>
+</div>
+
+<!-- Loading Screen -->
+<div class="loading-screen" id="loadingScreen" style="display:none">
+  <i class="ti ti-loader-2"></i>
+  <p>正在從 Gist 載入歌單…</p>
+</div>
+
+<div class="overlay" id="overlay" onclick="closeSidebar()"></div>
+
+<div class="app">
+  <div class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="app-brand"><i class="ti ti-music"></i><span>歌詞ライブラリ</span></div>
+      <div class="app-tagline">日文歌詞羅馬拼音收藏庫</div>
+      <div class="sync-status"><div class="sync-dot" id="syncDot"></div><span id="syncLabel">-</span></div>
+    </div>
+    <div class="search-box">
+      <i class="ti ti-search si"></i>
+      <input type="search" id="searchInput" placeholder="搜尋歌名、歌手…" oninput="renderList()" autocomplete="off">
+    </div>
+    <div class="filter-tabs">
+      <button class="ftab on" onclick="setTab('all',this)">全部</button>
+      <button class="ftab" onclick="setTab('fav',this)">收藏</button>
+    </div>
+    <div class="song-list" id="songList"></div>
+    <div class="sidebar-footer">
+      <button class="sf-btn primary" onclick="openAddModal()"><i class="ti ti-plus"></i> 新增歌曲</button>
+      <button class="sf-btn ghost" onclick="manualSync()"><i class="ti ti-refresh"></i> 重新整理</button>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="main-header" id="mainHeader" style="display:none">
+      <button class="menu-toggle" onclick="openSidebar()"><i class="ti ti-menu-2"></i></button>
+      <div class="header-info">
+        <div class="header-title" id="hTitle"></div>
+        <div class="header-artist" id="hArtist"></div>
+      </div>
+      <div class="header-actions">
+        <button class="hbtn" id="hFavBtn" onclick="toggleFavCurrent()"><i class="ti ti-heart"></i><span>收藏</span></button>
+        <button class="hbtn" onclick="editCurrent()"><i class="ti ti-edit"></i><span>編輯</span></button>
+        <button class="hbtn del" onclick="deleteCurrent()"><i class="ti ti-trash"></i></button>
+        <button class="hbtn" onclick="openSettingsModal()" title="設定"><i class="ti ti-settings"></i></button>
+      </div>
+    </div>
+    <div id="emptyView" class="empty">
+      <i class="ti ti-music-off"></i>
+      <p>選擇一首歌來查看歌詞</p>
+      <small>或點擊「新增歌曲」開始建立收藏</small>
+    </div>
+    <div class="lyrics-wrap" id="lyricsWrap" style="display:none">
+      <div class="lyrics-inner" id="lyricsInner"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Add/Edit Modal -->
+<div class="modal-wrap" id="editModal" style="display:none" onclick="closeModalOut(event,'editModal')">
+  <div class="modal">
+    <div class="modal-title"><i class="ti ti-music"></i><span id="editModalTitle">新增歌曲</span></div>
+    <div class="fr">
+      <div class="fg"><label class="fl">歌名（日文）</label><input class="fi" id="fTitle" placeholder="夜に駆ける"></div>
+      <div class="fg"><label class="fl">歌手 / 樂團</label><input class="fi" id="fArtist" placeholder="YOASOBI"></div>
+    </div>
+    <div class="fg">
+      <label class="fl">日文歌詞</label>
+      <textarea class="fi" id="fJapanese" placeholder="每行一句日文歌詞&#10;沈むように 溶けてゆくように"></textarea>
+      <div class="fhint">每行對應一行羅馬拼音</div>
+    </div>
+    <div class="fg">
+      <label class="fl">羅馬拼音</label>
+      <textarea class="fi" id="fRomaji" placeholder="每行一句羅馬拼音&#10;Shizumu you ni tokete yuku you ni"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-c" onclick="closeModal('editModal')">取消</button>
+      <button class="btn-s" onclick="saveSong()">儲存</button>
+    </div>
+  </div>
+</div>
+
+<!-- Settings Modal -->
+<div class="modal-wrap" id="settingsModal" style="display:none" onclick="closeModalOut(event,'settingsModal')">
+  <div class="modal">
+    <div class="modal-title"><i class="ti ti-settings"></i>Gist 設定</div>
+    <div class="fg">
+      <label class="fl">Gist ID</label>
+      <input class="fi" id="cfgGistId" spellcheck="false">
+    </div>
+    <div class="fg">
+      <label class="fl">GitHub Token</label>
+      <input class="fi" id="cfgToken" type="password" spellcheck="false">
+    </div>
+    <div class="modal-actions">
+      <button class="btn-c" onclick="closeModal('settingsModal')">取消</button>
+      <button class="btn-s" onclick="applySettings()">儲存並重新連線</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const STORE_KEY = 'romaji_config';
+const CACHE_KEY = 'romaji_cache';
+const GIST_FILE = 'romaji-lyrics.json';
+let songs=[], currentId=null, editingId=null, currentTab='all';
+let GIST_ID='', TOKEN='';
+
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+
+/* ── Config ── */
+function loadConfig(){
+  try{
+    const c=JSON.parse(localStorage.getItem(STORE_KEY)||'{}');
+    GIST_ID=c.gistId||''; TOKEN=c.token||'';
+  }catch(e){}
+}
+function saveConfig(){localStorage.setItem(STORE_KEY,JSON.stringify({gistId:GIST_ID,token:TOKEN}))}
+
+function saveSetup(){
+  const g=document.getElementById('setupGistId').value.trim();
+  const t=document.getElementById('setupToken').value.trim();
+  const err=document.getElementById('setupErr');
+  if(!g||!t){err.textContent='請填寫 Gist ID 和 Token';err.style.display='block';return;}
+  err.style.display='none';
+  GIST_ID=g; TOKEN=t; saveConfig();
+  document.getElementById('setupScreen').style.display='none';
+  init();
+}
+function openSettingsModal(){
+  document.getElementById('cfgGistId').value=GIST_ID;
+  document.getElementById('cfgToken').value=TOKEN;
+  openModal('settingsModal');
+}
+function applySettings(){
+  GIST_ID=document.getElementById('cfgGistId').value.trim();
+  TOKEN=document.getElementById('cfgToken').value.trim();
+  saveConfig(); closeModal('settingsModal');
+  init();
+}
+
+/* ── Gist API ── */
+async function gistFetch(method,body){
+  const res=await fetch(`https://api.github.com/gists/${GIST_ID}`,{
+    method,
+    headers:{'Authorization':`token ${TOKEN}`,'Accept':'application/vnd.github.v3+json','Content-Type':'application/json'},
+    body:body?JSON.stringify(body):undefined
+  });
+  if(!res.ok)throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+
+async function loadFromGist(){
+  setSyncStatus('ing','同步中…');
+  document.getElementById('loadingScreen').style.display='flex';
+  try{
+    const data=await gistFetch('GET');
+    const content=data.files[GIST_FILE]?.content||'[]';
+    songs=JSON.parse(content);
+    localStorage.setItem(CACHE_KEY,JSON.stringify(songs));
+    setSyncStatus('ok','已同步');
+  }catch(e){
+    const cached=localStorage.getItem(CACHE_KEY);
+    if(cached){songs=JSON.parse(cached);setSyncStatus('err','離線（使用快取）');}
+    else{songs=[];setSyncStatus('err','無法連線');}
+  }
+  document.getElementById('loadingScreen').style.display='none';
+  renderList();
+  if(songs.length>0)selectSong(songs[0].id);
+}
+
+async function saveToGist(){
+  setSyncStatus('ing','儲存中…');
+  try{
+    await gistFetch('PATCH',{files:{[GIST_FILE]:{content:JSON.stringify(songs,null,2)}}});
+    localStorage.setItem(CACHE_KEY,JSON.stringify(songs));
+    setSyncStatus('ok','已同步');
+  }catch(e){
+    setSyncStatus('err','儲存失敗');
+    showToast('⚠️ 雲端儲存失敗，資料暫存本機');
+  }
+}
+
+function setSyncStatus(state,label){
+  const d=document.getElementById('syncDot'),l=document.getElementById('syncLabel');
+  d.className='sync-dot'+(state==='ok'?' ok':state==='err'?' err':' ing');
+  l.textContent=label;
+}
+async function manualSync(){await loadFromGist();showToast('已重新載入歌單')}
+
+/* ── Tab / List ── */
+function setTab(t,el){currentTab=t;document.querySelectorAll('.ftab').forEach(x=>x.classList.remove('on'));el.classList.add('on');renderList()}
+function renderList(){
+  const q=(document.getElementById('searchInput').value||'').toLowerCase();
+  const list=songs.filter(s=>{
+    if(currentTab==='fav'&&!s.fav)return false;
+    if(q&&!s.title.toLowerCase().includes(q)&&!(s.artist||'').toLowerCase().includes(q))return false;
+    return true;
+  });
+  const el=document.getElementById('songList');
+  if(!list.length){el.innerHTML=`<div class="no-songs">${currentTab==='fav'?'尚無收藏歌曲':'找不到符合的歌曲'}</div>`;return;}
+  el.innerHTML=list.map(s=>`
+    <div class="song-item${s.id===currentId?' on':''}" onclick="selectSong('${s.id}')">
+      <div class="song-meta">
+        <div class="song-name">${esc(s.title)}</div>
+        <div class="song-artist">${esc(s.artist||'')}</div>
+      </div>
+      <button class="fav-star${s.fav?' on':''}" onclick="toggleFav(event,'${s.id}')">
+        <i class="ti ${s.fav?'ti-heart-filled':'ti-heart'}"></i>
+      </button>
+    </div>`).join('');
+}
+
+/* ── Select ── */
+function selectSong(id){
+  currentId=id;
+  const s=songs.find(x=>x.id===id);if(!s)return;
+  document.getElementById('emptyView').style.display='none';
+  document.getElementById('mainHeader').style.display='flex';
+  document.getElementById('lyricsWrap').style.display='block';
+  document.getElementById('hTitle').textContent=s.title;
+  document.getElementById('hArtist').textContent=s.artist||'';
+  updateFavBtn(s);
+  const jL=(s.japanese||'').split('\n'),rL=(s.romaji||'').split('\n');
+  const max=Math.max(jL.length,rL.length);
+  let html='';
+  for(let i=0;i<max;i++){const j=jL[i]||'',r=rL[i]||'';if(!j&&!r)continue;html+=`<div class="lyric-block">${j?`<div class="jp">${esc(j)}</div>`:''}${r?`<div class="rm">${esc(r)}</div>`:''}</div>`;}
+  document.getElementById('lyricsInner').innerHTML=html;
+  renderList();closeSidebar();
+}
+function updateFavBtn(s){
+  const b=document.getElementById('hFavBtn');
+  b.innerHTML=`<i class="ti ${s.fav?'ti-heart-filled':'ti-heart'}"></i><span>收藏</span>`;
+  b.classList.toggle('fav-on',!!s.fav);
+}
+
+/* ── Fav ── */
+function toggleFav(e,id){e.stopPropagation();const s=songs.find(x=>x.id===id);if(s)s.fav=!s.fav;if(currentId===id)updateFavBtn(s);renderList();saveToGist();showToast(s.fav?'已加入收藏':'已移除收藏')}
+function toggleFavCurrent(){if(!currentId)return;const s=songs.find(x=>x.id===currentId);if(s){s.fav=!s.fav;updateFavBtn(s);renderList();saveToGist();showToast(s.fav?'已加入收藏':'已移除收藏')}}
+
+/* ── CRUD ── */
+function openAddModal(){editingId=null;document.getElementById('editModalTitle').textContent='新增歌曲';['fTitle','fArtist','fJapanese','fRomaji'].forEach(id=>document.getElementById(id).value='');openModal('editModal')}
+function editCurrent(){if(!currentId)return;const s=songs.find(x=>x.id===currentId);editingId=currentId;document.getElementById('editModalTitle').textContent='編輯歌曲';document.getElementById('fTitle').value=s.title||'';document.getElementById('fArtist').value=s.artist||'';document.getElementById('fJapanese').value=s.japanese||'';document.getElementById('fRomaji').value=s.romaji||'';openModal('editModal')}
+async function saveSong(){
+  const title=document.getElementById('fTitle').value.trim();
+  const artist=document.getElementById('fArtist').value.trim();
+  const japanese=document.getElementById('fJapanese').value.trim();
+  const romaji=document.getElementById('fRomaji').value.trim();
+  if(!title){document.getElementById('fTitle').focus();return;}
+  if(editingId){const s=songs.find(x=>x.id===editingId);Object.assign(s,{title,artist,japanese,romaji});closeModal('editModal');if(currentId===editingId)selectSong(editingId);renderList();}
+  else{const s={id:uid(),title,artist,japanese,romaji,fav:false};songs.unshift(s);closeModal('editModal');selectSong(s.id);}
+  await saveToGist();showToast(editingId?'已儲存':'已新增歌曲');
+}
+async function deleteCurrent(){
+  if(!currentId)return;
+  const s=songs.find(x=>x.id===currentId);
+  if(!confirm(`確定刪除「${s.title}」？`))return;
+  songs=songs.filter(x=>x.id!==currentId);currentId=null;
+  document.getElementById('mainHeader').style.display='none';
+  document.getElementById('lyricsWrap').style.display='none';
+  document.getElementById('emptyView').style.display='flex';
+  renderList();await saveToGist();showToast('已刪除');
+}
+
+/* ── Sidebar / Modal / Toast ── */
+function openSidebar(){document.getElementById('sidebar').classList.add('open');document.getElementById('overlay').classList.add('on')}
+function closeSidebar(){document.getElementById('sidebar').classList.remove('open');document.getElementById('overlay').classList.remove('on')}
+function openModal(id){document.getElementById(id).style.display='flex'}
+function closeModal(id){document.getElementById(id).style.display='none'}
+function closeModalOut(e,id){if(e.target.id===id)closeModal(id)}
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200)}
+
+/* ── Init ── */
+function init(){loadFromGist()}
+
+loadConfig();
+if(!GIST_ID||!TOKEN){
+  document.getElementById('setupScreen').style.display='flex';
+} else {
+  init();
+}
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(()=>{}));
+}
+</script>
+</body>
+</html>

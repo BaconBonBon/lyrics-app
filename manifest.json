@@ -1,0 +1,18 @@
+{
+  "name": "歌詞ライブラリ",
+  "short_name": "歌詞",
+  "description": "日文歌詞羅馬拼音收藏庫",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F8F7FF",
+  "theme_color": "#7C3AED",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
